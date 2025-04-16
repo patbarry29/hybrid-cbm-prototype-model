@@ -1,3 +1,5 @@
+from functools import partial
+from multiprocessing import Pool, cpu_count
 from PIL import Image
 import os
 
@@ -27,7 +29,9 @@ def resize_images(input_dir, output_dir, target_size):
                     img.save(os.path.join(output_dir, dir, filename))
 
 
-def _get_transform_pipeline(use_training_transforms, resol, resized_resol):
+def _get_transform_pipeline(use_training_transforms, resol):
+    # resized_resol - resizes to slightly larger to ensure image is large enough before cropping to resol
+    resized_resol = int(resol * 256/224) # 299 * 256/224 = 341.7
     if use_training_transforms:
         print("Using TRAINING transformations:")
         return transforms.Compose([
@@ -42,9 +46,10 @@ def _get_transform_pipeline(use_training_transforms, resol, resized_resol):
     return transforms.Compose([
         transforms.Resize(resized_resol, interpolation=transforms.InterpolationMode.LANCZOS),
         transforms.CenterCrop(resol),
-        transforms.ToTensor(),
-        transforms.Normalize(mean = [0.5, 0.5, 0.5], std = [2, 2, 2])
+        transforms.ToTensor(), # divide by 255, convert from [0,255] -> [0.0,1.0]
+        transforms.Normalize(mean = [0.5, 0.5, 0.5], std = [2, 2, 2]) # shifts from [0.0, 1.0] -> [-0.25, 0.25]
         ])
+
 
 def _get_all_filenames(input_dir):
     all_image_paths = []
@@ -56,39 +61,62 @@ def _get_all_filenames(input_dir):
 
     return all_image_paths
 
-def transform_and_save_batches(input_dir, output_dir, resol, resized_resol, use_training_transforms, batch_size=64, verbose=False):
-    # get the transformation pipeline
-    transform_pipeline = _get_transform_pipeline(use_training_transforms, resol, resized_resol)
+def _get_filename_from_path(path):
+    parent_folder = os.path.basename(os.path.dirname(path))
+    filename = os.path.basename(path)
+    return os.path.join(parent_folder, filename)
 
-    # create output directory
-    os.makedirs(output_dir, exist_ok=True)
 
-    # get all image paths
+def load_and_transform_images(input_dir, resol, use_training_transforms, batch_size = 64, verbose = False, dev=False):
+    """
+    Returns:
+        A tuple containing:
+        - A list of all transformed image tensors.
+        - A list of the corresponding original file paths for each tensor.
+    """
+    # Get the transformation pipeline
+    transform_pipeline = _get_transform_pipeline(use_training_transforms, resol)
+
+    # Get all image paths
     all_image_paths = _get_all_filenames(input_dir)
+    if not all_image_paths:
+        vprint("No images found in the specified directory.", verbose)
+        return [], []
 
     vprint(f"Found {len(all_image_paths)} images.", verbose)
     num_batches = math.ceil(len(all_image_paths) / batch_size)
-    vprint(f"Processing in {num_batches} batches of size {batch_size}...", verbose)
+    vprint(f"Processing in {num_batches} batches of size {batch_size} (for progress reporting)...", verbose)
 
+    all_transformed_tensors = []
+    all_processed_paths = []
     processed_count = 0
+    skipped_count = 0
+
     for i in range(num_batches):
+        if i > 20 and dev==True:
+            break
         batch_paths = all_image_paths[i * batch_size : (i + 1) * batch_size]
-        batch_tensors = []
         vprint(f"Processing Batch {i+1}/{num_batches}...", verbose)
 
         for img_path in batch_paths:
-            img = Image.open(img_path).convert('RGB')
-            transformed_img_tensor = transform_pipeline(img)
-            batch_tensors.append(transformed_img_tensor)
-            processed_count += 1
+            try:
+                # Open image, ensure RGB format
+                img = Image.open(img_path).convert('RGB')
+                # Apply transformations
+                transformed_img_tensor = transform_pipeline(img)
+                # Append the tensor and its path to the lists
+                all_transformed_tensors.append(transformed_img_tensor)
+                img_path = _get_filename_from_path(img_path)
+                all_processed_paths.append(img_path)
+                processed_count += 1
+            except FileNotFoundError:
+                vprint(f"Warning: Image file not found (might have been moved/deleted): {img_path}", verbose)
+                skipped_count += 1
 
-        if batch_tensors:
-            # Stack tensors in the batch along a new dimension (dim=0)
-            batch_tensor_stacked = torch.stack(batch_tensors, dim=0)
-            batch_filename = f"batch_{i:04d}.pt"
-            output_path = os.path.join(output_dir, batch_filename)
-            # save batch to file `batch_0001.pt`
-            torch.save(batch_tensor_stacked, output_path)
-            vprint(f"Saved {output_path} (Shape: {batch_tensor_stacked.shape})", verbose)
+    vprint(f"\nFinished processing.", verbose)
+    vprint(f"Successfully transformed: {processed_count} images.", verbose)
+    if skipped_count > 0:
+        vprint(f"Skipped due to errors: {skipped_count} images.", verbose)
 
-    vprint(f"\nFinished processing and saving {processed_count} images in {num_batches} batches.", verbose)
+    # Return the list of all tensors and their paths
+    return all_transformed_tensors, all_processed_paths

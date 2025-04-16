@@ -3,6 +3,7 @@ import numpy as np
 import os
 import pandas as pd
 
+from config import PROJECT_ROOT
 from src.utils.helpers import vprint
 
 def one_hot_encode_labels(image_class_labels_path, classes_path, verbose=False):
@@ -32,19 +33,16 @@ def one_hot_encode_labels(image_class_labels_path, classes_path, verbose=False):
         return None
 
 
-
 def _parse_file(concept_labels_file):
-    with open(concept_labels_file, 'r') as f:
-        lines = f.readlines()
-
     data = []
-    for line in lines:
-        parts = line.strip().split()
-        # We only need the first 3 columns (image_id, concept_id, is_present)
-        image_id = int(parts[0])
-        concept_id = int(parts[1])
-        is_present = int(parts[2])
-        data.append([image_id, concept_id, is_present])
+    with open(concept_labels_file, 'r') as f:
+        for line in f:
+            parts = line.strip().split()
+            # We only need the first 3 columns (image_id, concept_id, is_present)
+            image_id = int(parts[0])
+            concept_id = int(parts[1])
+            is_present = int(parts[2])
+            data.append([image_id, concept_id, is_present])
 
     return data
 
@@ -82,3 +80,19 @@ def encode_image_concepts(concept_labels_file, verbose=False):
     except FileNotFoundError as e:
         print(f"Error: File not found - {e}. Please check paths.")
         return None
+
+
+def get_image_id_mapping(filepath):
+    mapping = {}
+    with open(filepath, 'r') as f:
+        for line in f:
+            image_id, filename = line.strip().split()
+            mapping[int(image_id)-1] = filename
+
+    return mapping
+
+if __name__ == '__main__':
+    # Define full paths
+    images_file = os.path.join(PROJECT_ROOT, 'data', 'images.txt')
+
+    print(get_image_id_mapping(images_file))
