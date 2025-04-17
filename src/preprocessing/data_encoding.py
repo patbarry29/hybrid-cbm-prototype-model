@@ -2,8 +2,9 @@ import time
 import numpy as np
 import os
 import pandas as pd
+import torch
 
-from config import PROJECT_ROOT
+from config import N_IMAGES, PROJECT_ROOT
 from src.utils.helpers import vprint
 
 def one_hot_encode_labels(image_class_labels_path, classes_path, verbose=False):
@@ -82,12 +83,15 @@ def encode_image_concepts(concept_labels_file, verbose=False):
         return None
 
 
-def get_image_id_mapping(filepath):
+def get_filename_to_id_mapping(filepath, reverse=False):
     mapping = {}
     with open(filepath, 'r') as f:
         for line in f:
             image_id, filename = line.strip().split()
-            mapping[int(image_id)-1] = filename
+            if not reverse:
+                mapping[filename] = int(image_id)-1
+            else:
+                mapping[int(image_id)-1] = filename
 
     return mapping
 
@@ -95,4 +99,4 @@ if __name__ == '__main__':
     # Define full paths
     images_file = os.path.join(PROJECT_ROOT, 'data', 'images.txt')
 
-    print(get_image_id_mapping(images_file))
+    print(get_filename_to_id_mapping(images_file))
