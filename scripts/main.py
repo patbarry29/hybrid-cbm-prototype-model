@@ -3,7 +3,8 @@ import time
 
 from config import PROJECT_ROOT
 from src.dataset import ImageConceptDataset
-from src.preprocessing import load_and_transform_images, one_hot_encode_labels, encode_image_concepts, get_filename_to_id_mapping
+from src.preprocessing import *
+from src.utils import get_filename_to_id_mapping
 
 from torch.utils.data import DataLoader
 

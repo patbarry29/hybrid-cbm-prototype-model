@@ -82,21 +82,25 @@ def encode_image_concepts(concept_labels_file, verbose=False):
         print(f"Error: File not found - {e}. Please check paths.")
         return None
 
-
-def get_filename_to_id_mapping(filepath, reverse=False):
-    mapping = {}
-    with open(filepath, 'r') as f:
+def _load_concept_names(concepts_path):
+    concept_names = {}
+    with open(concepts_path, 'r') as f:
         for line in f:
-            image_id, filename = line.strip().split()
-            if not reverse:
-                mapping[filename] = int(image_id)-1
-            else:
-                mapping[int(image_id)-1] = filename
+            parts = line.strip().split(' ', 1)
+            if len(parts) == 2:
+                concept_id = int(parts[0])
+                concept_name = parts[1]
+                concept_names[concept_id] = concept_name
 
-    return mapping
+    return concept_names
 
-if __name__ == '__main__':
-    # Define full paths
-    images_file = os.path.join(PROJECT_ROOT, 'data', 'images.txt')
+def get_concepts(concept_vector, concepts_path):
+    concept_names = _load_concept_names(concepts_path)
 
-    print(get_filename_to_id_mapping(images_file))
+    true_concept_indices = np.where(concept_vector == 1)[0]
+
+    true_concept_ids = true_concept_indices + 1
+
+    active_concepts = [concept_names[concept_id] for concept_id in true_concept_ids if concept_id in concept_names]
+
+    return active_concepts
