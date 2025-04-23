@@ -4,21 +4,19 @@ import time
 from config import PROJECT_ROOT
 from src.dataset import ImageConceptDataset
 from src.preprocessing import *
-from src.utils import get_filename_to_id_mapping
 
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
+from sklearn.model_selection import train_test_split
 
-from src.preprocessing.data_encoding import get_train_test_masks
-from src.preprocessing.split_train_test import split_datasets
 
-def main():
+def preprocessing_main(verbose=False):
     # LOAD AND TRANSFORM IMAGES
     input_dir = os.path.join(PROJECT_ROOT, 'images')
     resol = 299
     training = True
-    verbose = True
+    mapping_file = os.path.join(PROJECT_ROOT, 'data', 'images.txt')
 
-    image_tensors, image_paths = load_and_transform_images(input_dir, resol, training, batch_size=32, verbose=verbose, dev=False)
+    image_tensors, image_paths = load_and_transform_images(input_dir, mapping_file, resol, training, batch_size=32, verbose=verbose, dev=False)
 
     # CREATE CONCEPT LABELS MATRIX
     concept_labels_file = os.path.join(PROJECT_ROOT, 'data', 'image_concept_labels.txt')
@@ -45,12 +43,11 @@ def main():
     test_tensors = split_data['test_tensors']
 
     # CREATE DATASET TRAIN AND TEST
-    train_dataset = ImageConceptDataset(
+    full_train_dataset = ImageConceptDataset(
         image_tensors=train_tensors,
         concept_labels=train_concepts,
         image_labels=train_img_labels
     )
-    print(f"Train dataset length: {len(train_dataset)}")
 
     test_dataset = ImageConceptDataset(
         image_tensors=test_tensors,
@@ -58,29 +55,34 @@ def main():
         image_labels=test_img_labels
     )
 
-    print(f"Test dataset length: {len(test_dataset)}")
+    # CREATE VALIDATION SET FROM TRAIN
+
+    val_proportion = 0.20
+    all_indices = list(range(len(full_train_dataset)))
+    # Assuming you can get all class labels for the training set
+    all_train_labels = full_train_dataset.get_labels()
+
+    train_indices, val_indices, _, _ = train_test_split(
+        all_indices,
+        all_train_labels,
+        test_size=val_proportion,
+        random_state=42, # for reproducibility
+        stratify=all_train_labels
+    )
+
+    train_dataset = Subset(full_train_dataset, train_indices)
+    val_dataset = Subset(full_train_dataset, val_indices)
 
     # CREATE DATALOADERS FROM DATASETS
     batch_size = 32
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=4,
-        pin_memory=True
-    )
-    test_loader = DataLoader(
-        test_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=4,
-        pin_memory=True
-    )
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, drop_last=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True, drop_last=False)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True, drop_last=False)
 
-
+    return concept_labels, train_loader, val_loader, test_loader
 
 if __name__ == '__main__':
     start_time = time.time()
-    main()
+    preprocessing_main()
     end_time = time.time()
     print('exec time:', end_time-start_time)

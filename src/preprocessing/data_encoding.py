@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 
 from config import N_IMAGES, PROJECT_ROOT
-from src.utils.helpers import vprint
+from src.utils.helpers import load_concept_names, vprint
 
 def one_hot_encode_labels(image_class_labels_path, classes_path, verbose=False):
     try:
@@ -82,20 +82,8 @@ def encode_image_concepts(concept_labels_file, verbose=False):
         print(f"Error: File not found - {e}. Please check paths.")
         return None
 
-def _load_concept_names(concepts_path):
-    concept_names = {}
-    with open(concepts_path, 'r') as f:
-        for line in f:
-            parts = line.strip().split(' ', 1)
-            if len(parts) == 2:
-                concept_id = int(parts[0])
-                concept_name = parts[1]
-                concept_names[concept_id] = concept_name
-
-    return concept_names
-
 def get_concepts(concept_vector, concepts_path):
-    concept_names = _load_concept_names(concepts_path)
+    concept_names = load_concept_names(concepts_path)
 
     true_concept_indices = np.where(concept_vector == 1)[0]
 

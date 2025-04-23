@@ -16,7 +16,7 @@ class ImageConceptDataset(Dataset):
         self.concept_labels = torch.as_tensor(concept_labels, dtype=torch.float32)
         self.image_labels = torch.as_tensor(image_labels, dtype=torch.float32)
 
-        # --- Validate Consistency ---
+        # --- Validate Sizes ---
         num_images_tensor = len(self.image_tensors)
         num_images_concepts = self.concept_labels.shape[0]
         num_images_labels = self.image_labels.shape[0]
@@ -28,7 +28,7 @@ class ImageConceptDataset(Dataset):
                             f"{num_images_labels} label rows. "
                             f"Inputs must be pre-sorted and have the same length.")
 
-        # --- Store Metadata (Optional but good practice) ---
+        # --- Store Metadata  ---
         self.num_samples = num_images_tensor
         # Check if concept_labels is 1D or 2D
         self.num_concepts = self.concept_labels.shape[1] if self.concept_labels.ndim > 1 else 1
@@ -52,3 +52,6 @@ class ImageConceptDataset(Dataset):
         image_label = self.image_labels[idx]
 
         return image_tensor, concepts, image_label, idx+1
+
+    def get_labels(self):
+        return self.image_labels
