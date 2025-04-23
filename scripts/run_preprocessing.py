@@ -57,21 +57,7 @@ def preprocessing_main(verbose=False):
 
     # CREATE VALIDATION SET FROM TRAIN
 
-    val_proportion = 0.20
-    all_indices = list(range(len(full_train_dataset)))
-    # Assuming you can get all class labels for the training set
-    all_train_labels = full_train_dataset.get_labels()
-
-    train_indices, val_indices, _, _ = train_test_split(
-        all_indices,
-        all_train_labels,
-        test_size=val_proportion,
-        random_state=42, # for reproducibility
-        stratify=all_train_labels
-    )
-
-    train_dataset = Subset(full_train_dataset, train_indices)
-    val_dataset = Subset(full_train_dataset, val_indices)
+    train_dataset, val_dataset = train_val_split(full_train_dataset, val_size=0.2)
 
     # CREATE DATALOADERS FROM DATASETS
     batch_size = 32

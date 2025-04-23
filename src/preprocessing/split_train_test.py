@@ -1,5 +1,7 @@
 
+from sklearn.model_selection import train_test_split
 import torch
+from torch.utils.data import Subset
 
 from config import N_IMAGES
 from src.utils.helpers import vprint
@@ -59,3 +61,22 @@ def split_datasets(split_file, concept_labels, image_labels, image_tensors):
         'train_tensors': train_tensors,
         'test_tensors': test_tensors
     }
+
+
+def train_val_split(full_train_dataset, val_size):
+    val_proportion = 0.20
+    all_indices = list(range(len(full_train_dataset)))
+    all_train_labels = full_train_dataset.get_labels()
+
+    train_indices, val_indices, _, _ = train_test_split(
+        all_indices,
+        all_train_labels,
+        test_size=val_proportion,
+        random_state=42, # for reproducibility
+        stratify=all_train_labels
+    )
+
+    train_dataset = Subset(full_train_dataset, train_indices)
+    val_dataset = Subset(full_train_dataset, val_indices)
+
+    return train_dataset, val_dataset
