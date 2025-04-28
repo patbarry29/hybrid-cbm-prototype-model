@@ -1,10 +1,6 @@
-import time
 import numpy as np
-import os
 import pandas as pd
-import torch
 
-from config import N_IMAGES, PROJECT_ROOT
 from src.utils.helpers import load_concept_names, vprint
 
 def one_hot_encode_labels(image_class_labels_path, classes_path, verbose=False):
@@ -22,7 +18,7 @@ def one_hot_encode_labels(image_class_labels_path, classes_path, verbose=False):
         # 3. initialise label matrix with zeros
         one_hot_matrix = np.zeros((num_images, num_classes), dtype=int)
 
-        # 4. populate matrix (vectorised)
+        # 4. populate matrix
         class_ids = labels_df['class_id'].values - 1
         one_hot_matrix[np.arange(len(labels_df)), class_ids] = 1
 
@@ -43,7 +39,8 @@ def _parse_file(concept_labels_file):
             image_id = int(parts[0])
             concept_id = int(parts[1])
             is_present = int(parts[2])
-            data.append([image_id, concept_id, is_present])
+            uncertainty = int(parts[3])
+            data.append([image_id, concept_id, is_present, uncertainty])
 
     return data
 
@@ -54,7 +51,7 @@ def encode_image_concepts(concept_labels_file, verbose=False):
         data = _parse_file(concept_labels_file)
 
         # 2. Create a DataFrame from the parsed data
-        concept_df = pd.DataFrame(data, columns=['image_id', 'concept_id', 'is_present'])
+        concept_df = pd.DataFrame(data, columns=['image_id', 'concept_id', 'is_present', 'uncertainty'])
 
         # 3. get the number of unique images and concepts
         unique_images = concept_df['image_id'].unique()
@@ -68,15 +65,17 @@ def encode_image_concepts(concept_labels_file, verbose=False):
 
         # 4. create concepts matrix initialized with zeros
         concept_matrix = np.zeros((num_images, max_concept_id), dtype=int)
+        uncertainty_matrix = np.zeros((num_images, max_concept_id), dtype=int)
 
         # 5. populate matrix (vectorised)
         img_ids = concept_df['image_id'].values - 1
         concept_ids = concept_df['concept_id'].values - 1
         concept_matrix[img_ids, concept_ids] = concept_df['is_present'].values
+        uncertainty_matrix[img_ids, concept_ids] = concept_df['uncertainty'].values
 
         vprint(f"Generated concept matrix with shape: {concept_matrix.shape}", verbose)
 
-        return concept_matrix
+        return concept_matrix, uncertainty_matrix
 
     except FileNotFoundError as e:
         print(f"Error: File not found - {e}. Please check paths.")

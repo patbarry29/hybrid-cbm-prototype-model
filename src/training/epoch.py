@@ -25,12 +25,12 @@ def _calculate_concept_loss(concept_idx, main_output, aux_output, target, criter
 def _log_progress(start_time, is_training, batch_idx, log_interval, loader, loss_meter, acc_meter):
     if is_training and (batch_idx + 1) % log_interval == 0:
         elapsed_time = time.time() - start_time
-        print(f' Batch: {batch_idx+1}/{len(loader)} | Avg. Loss: {loss_meter.avg:.4f} |'
+        print(f' Batch: {batch_idx+1:3d}/{len(loader)} | Avg. Loss: {loss_meter.avg:.4f} |'
             f' Avg. Acc.: {acc_meter.avg:.3f} | Time: {elapsed_time:.2f}s')
         return time.time() # Reset timer
     return start_time
 
-def run_epoch_x_to_c(model, loader, criterion_list, optimizer, is_training, use_aux, n_concepts, device='cpu', log_interval=100):
+def run_epoch_x_to_c(model, loader, criterion_list,  optimizer, n_concepts, is_training=False, use_aux=False, device='cpu', log_interval=50):
     """
     Modified run_epoch focused on X -> C training.
     criterion_list: List of loss functions for each concept.
@@ -90,3 +90,5 @@ def run_epoch_x_to_c(model, loader, criterion_list, optimizer, is_training, use_
                                 log_interval, loader, loss_meter, acc_meter)
 
     return loss_meter.avg, acc_meter.avg
+
+# TO DO - look if model and optmiiser should be passed as param or by reference

@@ -13,7 +13,7 @@ print('Encoding image concepts...')
 concept_labels_file = os.path.join(PROJECT_ROOT, 'data', 'image_concept_labels.txt')
 
 start_time = time.time()
-concept_matrix = encode_image_concepts(concept_labels_file, verbose=True)
+concept_matrix, uncertainty_matrix = encode_image_concepts(concept_labels_file, verbose=True)
 end_time = time.time()
 print('exec time:', end_time-start_time)
 

@@ -66,7 +66,7 @@ def _get_filename_from_path(path):
     return os.path.join(parent_folder, filename)
 
 
-def load_and_transform_images(input_dir, mapping_file, resol, use_training_transforms, batch_size = 64, verbose = False, dev=False):
+def load_and_transform_images(input_dir, mapping_file, resol, use_training_transforms, batch_size = 64, verbose = False):
     """
     Returns:
         A tuple containing:
@@ -82,6 +82,7 @@ def load_and_transform_images(input_dir, mapping_file, resol, use_training_trans
         vprint("No images found in the specified directory.", verbose)
         return [], []
 
+    # get correct sorting
     if mapping_file:
         filename_id_map = get_filename_to_id_mapping(mapping_file)
         all_image_paths.sort(key=lambda path: filename_id_map.get(_get_filename_from_path(path), float('inf')))
@@ -96,8 +97,6 @@ def load_and_transform_images(input_dir, mapping_file, resol, use_training_trans
     skipped_count = 0
 
     for i in tqdm(range(num_batches), desc="Processing batches", disable=not verbose):
-        if i > 20 and dev==True:
-            break
         batch_paths = all_image_paths[i * batch_size : (i + 1) * batch_size]
 
         for img_path in batch_paths:
