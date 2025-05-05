@@ -1,6 +1,7 @@
 import time
 
 import torch
+from tqdm import tqdm
 from src.utils import *
 
 def _get_outputs(model, inputs):
@@ -9,7 +10,8 @@ def _get_outputs(model, inputs):
         return outputs[0], outputs[1]
     return outputs, None
 
-def _calculate_concept_loss(concept_idx, main_output, aux_output, target, criterion, is_training, use_aux):
+def _calculate_concept_loss(concept_idx, main_output, aux_output, target, criterion,
+                            is_training, use_aux):
     # Process main output
     main_output_squeezed = main_output.squeeze()  # Shape [N]
     loss = criterion(main_output_squeezed, target)
@@ -22,15 +24,9 @@ def _calculate_concept_loss(concept_idx, main_output, aux_output, target, criter
 
     return loss, main_output
 
-def _log_progress(start_time, is_training, batch_idx, log_interval, loader, loss_meter, acc_meter):
-    if is_training and (batch_idx + 1) % log_interval == 0:
-        elapsed_time = time.time() - start_time
-        print(f' Batch: {batch_idx+1:3d}/{len(loader)} | Avg. Loss: {loss_meter.avg:.4f} |'
-            f' Avg. Acc.: {acc_meter.avg:.3f} | Time: {elapsed_time:.2f}s')
-        return time.time() # Reset timer
-    return start_time
-
-def run_epoch_x_to_c(model, loader, criterion_list,  optimizer, n_concepts, is_training=False, use_aux=False, device='cpu', log_interval=50):
+def run_epoch_x_to_c(model, loader, criterion_list,  optimizer, n_concepts,
+                    is_training=False, use_aux=False, device='cpu', verbose=False,
+                    return_outputs=None):
     """
     Modified run_epoch focused on X -> C training.
     criterion_list: List of loss functions for each concept.
@@ -44,7 +40,12 @@ def run_epoch_x_to_c(model, loader, criterion_list,  optimizer, n_concepts, is_t
     loss_meter, acc_meter = AverageMeter(), AverageMeter()
     start_time = time.time()
 
-    for batch_idx, data in enumerate(loader):
+    outputs = []
+
+    desc = "Training" if is_training else "Validation"
+    tqdm_loader = tqdm(loader, desc=desc, leave=False, disable=not verbose) # Wrap the loader with tqdm
+
+    for batch_idx, data in enumerate(tqdm_loader):
         inputs = data[0].to(device)
         concept_labels = data[1].to(device)
 
@@ -53,6 +54,8 @@ def run_epoch_x_to_c(model, loader, criterion_list,  optimizer, n_concepts, is_t
 
         # Forward pass
         main_outputs, aux_outputs = _get_outputs(model, inputs)
+        if return_outputs=='main':
+            outputs.append(main_outputs)
 
         # Loss calculation
         total_loss = 0
@@ -79,16 +82,18 @@ def run_epoch_x_to_c(model, loader, criterion_list,  optimizer, n_concepts, is_t
 
         # Accuracy Calculation (using the main outputs collected)
         sigmoid_outputs = torch.sigmoid(torch.cat(all_concept_outputs, dim=1))
+        if return_outputs=='sigmoid':
+            outputs.append(sigmoid_outputs)
         acc = binary_accuracy(sigmoid_outputs, concept_labels.int())
 
         # Update meters
         loss_meter.update(avg_batch_loss.item(), inputs.size(0))
         acc_meter.update(acc, inputs.size(0))
 
-        # Logging
-        start_time = _log_progress(start_time, is_training, batch_idx,
-                                log_interval, loader, loss_meter, acc_meter)
+        # Update tqdm progress bar description with current loss and accuracy
+        tqdm_loader.set_postfix(loss=f'{loss_meter.avg:.4f}', acc=f'{acc_meter.avg:.4f}')
 
+    if return_outputs is not None:
+        return loss_meter.avg, acc_meter.avg, outputs
     return loss_meter.avg, acc_meter.avg
 
-# TO DO - look if model and optmiiser should be passed as param or by reference

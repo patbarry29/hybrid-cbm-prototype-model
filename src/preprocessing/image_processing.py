@@ -94,30 +94,22 @@ def load_and_transform_images(input_dir, mapping_file, resol, use_training_trans
     all_transformed_tensors = []
     all_processed_paths = []
     processed_count = 0
-    skipped_count = 0
 
     for i in tqdm(range(num_batches), desc="Processing batches", disable=not verbose):
         batch_paths = all_image_paths[i * batch_size : (i + 1) * batch_size]
 
         for img_path in batch_paths:
-            try:
-                # Open image, ensure RGB format
-                img = Image.open(img_path).convert('RGB')
-                # Apply transformations
-                transformed_img_tensor = transform_pipeline(img)
-                # Append the tensor and its path to the lists
-                all_transformed_tensors.append(transformed_img_tensor)
-                img_path = _get_filename_from_path(img_path)
-                all_processed_paths.append(img_path)
-                processed_count += 1
-            except FileNotFoundError:
-                vprint(f"Warning: Image file not found (might have been moved/deleted): {img_path}", verbose)
-                skipped_count += 1
+            img = Image.open(img_path).convert('RGB')
+            # Apply transformations
+            transformed_img_tensor = transform_pipeline(img)
+            # Append the tensor and its path to the lists
+            all_transformed_tensors.append(transformed_img_tensor)
+            img_path = _get_filename_from_path(img_path)
+            all_processed_paths.append(img_path)
+            processed_count += 1
 
     vprint(f"\nFinished processing.", verbose)
     vprint(f"Successfully transformed: {processed_count} images.", verbose)
-    if skipped_count > 0:
-        vprint(f"Skipped due to errors: {skipped_count} images.", verbose)
 
     # Return the list of all tensors and their paths
     return all_transformed_tensors, all_processed_paths

@@ -2,6 +2,8 @@ import numpy as np
 import os
 import time
 
+import torch
+
 from config import PROJECT_ROOT
 from src.dataset import ImageConceptDataset
 from src.preprocessing import *
@@ -9,7 +11,7 @@ from src.preprocessing import *
 from torch.utils.data import DataLoader
 
 
-def preprocessing_main(trim_concepts=False, verbose=False):
+def preprocessing_main(class_concepts=False, verbose=False):
     # LOAD AND TRANSFORM IMAGES
     input_dir = os.path.join(PROJECT_ROOT, 'images')
     resol = 299
@@ -43,20 +45,20 @@ def preprocessing_main(trim_concepts=False, verbose=False):
 
     train_tensors = split_data['train_tensors']
     test_tensors = split_data['test_tensors']
+
+    # concept processing
     class_level_concepts = compute_class_level_concepts(train_concept_labels, train_uncertainty, train_img_labels)
-    if trim_concepts:
-        common_concept_indices = select_common_concepts(class_level_concepts, min_class_count=10)
 
-        # common_concept_indices = np.array([1, 4, 6, 7, 10, 14, 15, 20, 21, 23, 25, 29, 30, 35, 36, 38, 40, 44, 45, 50, 51, 53, 54, 56, 57, 59, 63, 64, 69, 70, 72, 75, 80, 84, 90, 91, \
-        # 93, 99, 101, 106, 110, 111, 116, 117, 119, 125, 126, 131, 132, 134, 145, 149, 151, 152, 153, 157, 158, 163, 164, 168, 172, 178, 179, 181, \
-        # 183, 187, 188, 193, 194, 196, 198, 202, 203, 208, 209, 211, 212, 213, 218, 220, 221, 225, 235, 236, 238, 239, 240, 242, 243, 244, 249, 253, \
-        # 254, 259, 260, 262, 268, 274, 277, 283, 289, 292, 293, 294, 298, 299, 304, 305, 308, 309, 310, 311])
+    # apply class-level concepts to each instance
+    if class_concepts:
+        train_concept_labels, test_concept_labels = apply_class_concepts_to_instances(train_img_labels, train_concept_labels, class_level_concepts, test_img_labels, test_concept_labels)
 
-        train_concept_labels = train_concept_labels[:, common_concept_indices]
-        test_concept_labels = test_concept_labels[:, common_concept_indices]
+    common_concept_indices = select_common_concepts(class_level_concepts, min_class_count=10)
+    train_concept_labels = train_concept_labels[:, common_concept_indices]
+    test_concept_labels = test_concept_labels[:, common_concept_indices]
 
-    # CREATE DATASET TRAIN AND TEST
-    full_train_dataset = ImageConceptDataset(
+    # CREATE TRAIN AND TEST DATASET
+    train_dataset = ImageConceptDataset(
         image_tensors=train_tensors,
         concept_labels=train_concept_labels,
         image_labels=train_img_labels
@@ -70,7 +72,7 @@ def preprocessing_main(trim_concepts=False, verbose=False):
 
     # CREATE DATALOADERS FROM DATASETS
     batch_size = 64
-    train_loader = DataLoader(full_train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, drop_last=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True, drop_last=False)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True, drop_last=False)
 
     return concept_labels, train_loader, test_loader

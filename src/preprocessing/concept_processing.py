@@ -1,5 +1,7 @@
 import numpy as np
 
+from config import N_CLASSES
+
 def compute_class_level_concepts(concept_labels_matrix, uncertainty_matrix, image_labels_matrix):
     _, num_concepts = concept_labels_matrix.shape
     num_classes = image_labels_matrix.shape[1]
@@ -41,9 +43,24 @@ def compute_class_level_concepts(concept_labels_matrix, uncertainty_matrix, imag
     return class_level_concepts
 
 def select_common_concepts(class_level_concepts, min_class_count):
-    concept_counts = np.sum(class_level_concepts, axis=0)
+    return [1, 4, 6, 7, 10, 14, 15, 20, 21, 23, 25, 29, 30, 35, 36, 38, 40, 44, 45, 50, 51, 53, 54, 56, 57, 59, 63, 64, 69, 70, 72, 75, 80, 84, 90, 91, \
+    93, 99, 101, 106, 110, 111, 116, 117, 119, 125, 126, 131, 132, 134, 145, 149, 151, 152, 153, 157, 158, 163, 164, 168, 172, 178, 179, 181, \
+    183, 187, 188, 193, 194, 196, 198, 202, 203, 208, 209, 211, 212, 213, 218, 220, 221, 225, 235, 236, 238, 239, 240, 242, 243, 244, 249, 253, \
+    254, 259, 260, 262, 268, 274, 277, 283, 289, 292, 293, 294, 298, 299, 304, 305, 308, 309, 310, 311]
 
-    # Find indices where the count meets the threshold
-    selected_concept_indices = np.where(concept_counts >= min_class_count)[0]
+    # concept_counts = np.sum(class_level_concepts, axis=0)
 
-    return selected_concept_indices
+    # # Find indices where the count meets the threshold
+    # selected_concept_indices = np.where(concept_counts >= min_class_count)[0]
+
+    # return selected_concept_indices
+
+
+def apply_class_concepts_to_instances(train_img_labels, train_concept_labels, class_level_concepts, test_img_labels, test_concept_labels):
+    for y in range(N_CLASSES):
+        choice = train_img_labels[:, y] == 1
+        train_concept_labels[choice,:] = class_level_concepts[y,:]
+        choice = test_img_labels[:, y] == 1
+        test_concept_labels[choice,:] = class_level_concepts[y,:]
+
+    return train_concept_labels, test_concept_labels
