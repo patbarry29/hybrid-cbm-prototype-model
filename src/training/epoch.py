@@ -12,14 +12,16 @@ def _get_outputs(model, inputs):
 
 def _calculate_concept_loss(concept_idx, main_output, aux_output, target, criterion,
                             is_training, use_aux):
+    alpha = 1
+
     # Process main output
     main_output_squeezed = main_output.squeeze()  # Shape [N]
-    loss = criterion(main_output_squeezed, target)
+    loss = criterion(main_output_squeezed*alpha, target)
 
     # Add auxiliary loss if needed
     if is_training and use_aux and aux_output is not None:
         aux_output_squeezed = aux_output[concept_idx].squeeze()  # Shape [N]
-        aux_loss = criterion(aux_output_squeezed, target)
+        aux_loss = criterion(aux_output_squeezed*alpha, target)
         loss += 0.4 * aux_loss  # Add weighted auxiliary loss
 
     return loss, main_output
@@ -45,7 +47,7 @@ def run_epoch_x_to_c(model, loader, criterion_list,  optimizer, n_concepts,
     desc = "Training" if is_training else "Validation"
     tqdm_loader = tqdm(loader, desc=desc, leave=False, disable=not verbose) # Wrap the loader with tqdm
 
-    for batch_idx, data in enumerate(tqdm_loader):
+    for _, data in enumerate(tqdm_loader):
         inputs = data[0].to(device)
         concept_labels = data[1].to(device)
 
