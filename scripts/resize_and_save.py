@@ -1,6 +1,6 @@
 import os
 from config import PROJECT_ROOT
-from src.preprocessing import resize_images
+from src.preprocessing.CUB import resize_images
 
 # Define full paths
 input_dir = os.path.join(PROJECT_ROOT, 'images')

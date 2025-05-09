@@ -3,12 +3,12 @@ from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import Subset
 
-from config import N_IMAGES
+from config import CUB_CONFIG
 from src.utils.helpers import vprint
 
 
 def _get_train_test_masks(split_file_path, verbose=False):
-    split_flags = torch.full((N_IMAGES,), -1, dtype=torch.int8) # Initialize with -1
+    split_flags = torch.full((CUB_CONFIG['N_IMAGES'],), -1, dtype=torch.int8) # Initialize with -1
 
     with open(split_file_path, 'r') as f:
         for line in f:
@@ -26,8 +26,8 @@ def _get_train_test_masks(split_file_path, verbose=False):
     num_train = train_mask.sum().item()
     num_test = test_mask.sum().item()
 
-    if num_train + num_test != N_IMAGES:
-        print(f"Warning: Mismatch in split counts. Train ({num_train}) + Test ({num_test}) != Total ({N_IMAGES}). Check split file flags.")
+    if num_train + num_test != CUB_CONFIG['N_IMAGES']:
+        print(f"Warning: Mismatch in split counts. Train ({num_train}) + Test ({num_test}) != Total ({CUB_CONFIG['N_IMAGES']}). Check split file flags.")
 
     vprint(f"Split complete: {num_train} train images, {num_test} test images.", verbose)
     return train_mask, test_mask

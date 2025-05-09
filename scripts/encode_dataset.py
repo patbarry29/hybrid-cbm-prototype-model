@@ -3,14 +3,14 @@ import time
 import numpy as np
 
 from config import PROJECT_ROOT
-from src.preprocessing import encode_image_concepts
-from src.preprocessing import one_hot_encode_labels
+from src.preprocessing.CUB import encode_image_concepts
+from src.preprocessing.CUB import one_hot_encode_labels
 
 # --- ENCODE CONCEPTS ---
 print('Encoding image concepts...')
 
 # Define full paths
-concept_labels_file = os.path.join(PROJECT_ROOT, 'data', 'image_concept_labels.txt')
+concept_labels_file = os.path.join(PROJECT_ROOT, 'data', 'CUB', 'image_concept_labels.txt')
 
 start_time = time.time()
 concept_matrix, uncertainty_matrix = encode_image_concepts(concept_labels_file, verbose=True)
@@ -41,8 +41,8 @@ if concept_matrix is not None:
 print('\nEncoding image labels...')
 
 # Define full paths
-labels_file = os.path.join(PROJECT_ROOT, 'data', 'image_class_labels.txt')
-classes_file = os.path.join(PROJECT_ROOT, 'data', 'classes.txt')
+labels_file = os.path.join(PROJECT_ROOT, 'data', 'CUB', 'image_class_labels.txt')
+classes_file = os.path.join(PROJECT_ROOT, 'data', 'CUB', 'classes.txt')
 
 start_time = time.time()
 one_hot_labels = one_hot_encode_labels(labels_file, classes_file, verbose=True)

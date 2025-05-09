@@ -1,4 +1,3 @@
-from .inception_model import inception_v3
-from .models import ModelXtoC
+from .concept_dataset import ImageConceptDataset
 
-__all__ = ['inception_v3', 'ModelXtoC']
+__all__ = ['ImageConceptDataset']

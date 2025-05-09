@@ -12,11 +12,13 @@ import numpy as np
 project_root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root_path)
 
-from config import N_CONCEPTS, N_CLASSES, N_TRIMMED_CONCEPTS
-from src import ModelXtoC
-from scripts.run_preprocessing import preprocessing_main
+from config import CUB_CONFIG
+from src.models import ModelXtoC
+from src.preprocessing.CUB import preprocessing_main
 from src.utils import find_class_imbalance
 from src.training import run_epoch_x_to_c
+
+N_CLASSES, N_TRIMMED_CONCEPTS = CUB_CONFIG['N_CLASSES'], CUB_CONFIG['N_TRIMMED_CONCEPTS']
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Train X -> C Concept Model')

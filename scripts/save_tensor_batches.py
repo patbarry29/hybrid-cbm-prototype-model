@@ -1,8 +1,7 @@
 import os
 import time
-# from src.preprocessing import transform_and_save_batches
 from config import PROJECT_ROOT
-from src.preprocessing import load_and_transform_images
+from src.preprocessing.CUB import load_and_transform_images
 
 # Define full paths
 input_dir = os.path.join(PROJECT_ROOT, 'images')

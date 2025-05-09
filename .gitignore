@@ -1,6 +1,6 @@
 images/
 output/
-models/
+./models/
 unfinished/
 .DS_Store
 **/.DS_Store
